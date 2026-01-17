@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../components/boxes.dart'; // Ensure this file exists
 import 'sales_management.dart';
+import 'orders.dart';
 class DashboardPage extends StatelessWidget {
   final String username;
   final int totalSales = 40;
@@ -29,6 +30,7 @@ class DashboardPage extends StatelessWidget {
   ];
 
   // Change this line in DashboardPage class
+
   void onSalesClick(BuildContext context) {
     Navigator.push( // changed to push (not replacement) so you can go back
       context,
@@ -37,7 +39,14 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
-
+  void onOrdersClick(BuildContext context) {
+    Navigator.push( // changed to push (not replacement) so you can go back
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OrdersManagement(), // Link the new page here
+      ),
+    );
+  }
   // --- FIX 3: Remove 'const' from constructor ---
   // (Since the list above contains objects, this widget isn't a compile-time constant)
   DashboardPage({super.key, required this.username});
@@ -136,12 +145,12 @@ class DashboardPage extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () => onOrdersClick(context),
                     borderRadius: BorderRadius.circular(12),
                     child: StatBox(
-                      title: "Expense",
+                      title: "Orders",
                       isTitleBold: true,
-                      icon: Icons.trending_down,
+                      icon: Icons.shop,
                       iconColor: Colors.red,
                     ),
                   ),
