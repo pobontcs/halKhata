@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "472996435857",
+    "project_id": "halkhata-9ba30",
+    "storage_bucket": "halkhata-9ba30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:472996435857:android:af955e2bdd3bdf310dac30",
+        "android_client_info": {
+          "package_name": "com.example.displayside"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQeojqy3yssqLkCfeh0-J75_sKPcuOzLo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
