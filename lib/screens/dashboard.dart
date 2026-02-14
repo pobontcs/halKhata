@@ -1,320 +1,302 @@
+import 'dart:convert'; // Needed for Base64 decoding
 import 'package:flutter/material.dart';
-import '../components/boxes.dart'; // Ensure this file exists
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
+// Import your existing pages
+import '../components/boxes.dart';
 import 'sales_management.dart';
 import 'orders.dart';
 import 'warehouse.dart';
+import 'customize.dart';
+
 class DashboardPage extends StatelessWidget {
-  final String username;
-  final int totalSales = 40;
+  const DashboardPage({super.key});
 
-  // --- FIX 1: Move the list HERE (Class Level) ---
-  // Now the 'build' method can access it.
-  final List<ActivityItem> recentActivities = [
-    ActivityItem(
-      title: "Sold Goods",
-      amount: "5,400",
-      date: "10:23 AM",
-      entity: "Rahim Store",
-      isIncome: true, // Green
-    ),
-    ActivityItem(
-      title: "Shop Rent",
-      amount: "12,000",
-      date: "Yesterday",
-      isIncome: false, // Red
-    ),
-    ActivityItem(
-      title: "Inventory Check",
-      date: "Mon, 12 Jan",
-      // amount is null, entity is null
-    ),
-  ];
-
-  // Change this line in DashboardPage class
-
+  // Navigation Methods
+  void onOrdersClick(BuildContext context, String username) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => OrdersManagement(username: username)));
+  }
+  void onCustomizeClick(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Customize()));
+  }
   void onSalesClick(BuildContext context) {
-    Navigator.push( // changed to push (not replacement) so you can go back
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SalesManagementPage(), // Link the new page here
-      ),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const SalesManagementPage()));
   }
-  void onOrdersClick(BuildContext context) {
-    Navigator.push( // changed to push (not replacement) so you can go back
-      context,
-      MaterialPageRoute(
-        builder: (context) => const OrdersManagement(), // Link the new page here
-      ),
-    );
+  void onWareClick(BuildContext context, String username) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => WareHouse(username: username)));
   }
-  void onWareClick(BuildContext context) {
-    Navigator.push( // changed to push (not replacement) so you can go back
-      context,
-      MaterialPageRoute(
-        builder: (context) => const WareHouse(), // Link the new page here
-      ),
-    );
-  }
-  // --- FIX 3: Remove 'const' from constructor ---
-  // (Since the list above contains objects, this widget isn't a compile-time constant)
-  DashboardPage({super.key, required this.username});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text("Dashboard", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFFFF8500),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-          )
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFFFF8500)),
-              accountName: Text(username,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 18)),
-              accountEmail: const Text("admin@halkhata.com"),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Color(0xFFFF8500), size: 40),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Overview'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory),
-              title: const Text('Inventory'),
-              onTap: ()=>onWareClick(context),
-            ),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // --- HEADER CONTAINER ---
-            Container(
-              width: double.infinity,
-              height: 75,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  )
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Welcome back $username",
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const Icon(Icons.star, color: Colors.orange),
-                ],
-              ),
-            ),
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
 
-            const SizedBox(height: 50),
+    // Fetch User Profile (Shop Name & Photo)
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, userSnapshot) {
 
-            // --- STAT BOXES ROW 1 ---
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap:()=> onSalesClick(context),
-                    borderRadius: BorderRadius.circular(12),
-                    child: StatBox(
-                      title: "Sales",
-                      value: totalSales.toString(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => onOrdersClick(context),
-                    borderRadius: BorderRadius.circular(12),
-                    child: StatBox(
-                      title: "Orders",
-                      isTitleBold: true,
-                      icon: Icons.shop,
-                      iconColor: Colors.red,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+        // Default values
+        String shopName = "My Shop";
+        String userName = "User";
+        ImageProvider? profileImage;
 
-            // --- STAT BOXES ROW 2 ---
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: ()=>onWareClick(context),
-                    child: StatBox(
-                      title: "WareHouse",
-                      isTitleBold: true,
-                      icon: Icons.warehouse,
-                      iconColor: Colors.green,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: InkWell(
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          var data = userSnapshot.data!.data() as Map<String, dynamic>;
+          shopName = data['shop_name'] ?? "My Shop";
+          userName = data['name'] ?? "User";
 
-                      child: StatBox(
-                        title: "Customize",
-                        icon: Icons.construction,
-                        iconColor: Colors.grey,
-                        isTitleBold: true,
-                      )),
-                )
-              ],
-            ),
+          // --- PROFILE IMAGE LOGIC ---
+          String? photoUrl = data['photo_url'];
+          if (photoUrl != null && photoUrl.isNotEmpty) {
+            if (photoUrl.startsWith('http')) {
+              // It's a URL (Google Sign In)
+              profileImage = NetworkImage(photoUrl);
+            } else {
+              // It's Base64 (Manual Upload)
+              try {
+                profileImage = MemoryImage(base64Decode(photoUrl));
+              } catch (e) {
+                print("Error decoding image: $e");
+              }
+            }
+          }
+        }
 
-            const SizedBox(height: 25),
-
-            // --- SECTION TITLE ---
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8.0),
-              child: Row(
-                children: [
-                  Text(
-                    "Recent Activity",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // --- THE DYNAMIC LIST ---
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: recentActivities.length,
-                itemBuilder: (context, index) {
-                  final item = recentActivities[index];
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            blurRadius: 5,
-                            offset: const Offset(0, 2))
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // 1. Icon
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: item.isIncome
-                                ? Colors.green.shade50
-                                : Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            item.isIncome
-                                ? Icons.arrow_downward
-                                : Icons.arrow_upward,
-                            color: item.isIncome ? Colors.green : Colors.red,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.title,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15)
-                              ),
-                              if (item.entity != null)
-                                Text(
-                                  "To: ${item.entity}",
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
-                                ),
-                              Text(
-                                item.date,
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade400),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // 3. Amount
-                        if (item.amount != null)
-                          Text(
-                            "${item.isIncome ? '+' : '-'} ৳${item.amount}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: item.isIncome ? Colors.green : Colors.red,
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          appBar: AppBar(
+            title: Text(shopName, style: const TextStyle(color: Colors.white)),
+            backgroundColor: const Color(0xFFFF8500),
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (context.mounted) Navigator.of(context).pushReplacementNamed('/');
                 },
-              ),
+              )
+            ],
+          ),
+          drawer: Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                UserAccountsDrawerHeader(
+                  decoration: const BoxDecoration(color: Color(0xFFFF8500)),
+                  accountName: Text(shopName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? ""),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    backgroundImage: profileImage,
+                    child: profileImage == null
+                        ? const Icon(Icons.store, color: Color(0xFFFF8500), size: 40)
+                        : null,
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.inventory),
+                  title: const Text('Inventory'),
+                  onTap: () => onWareClick(context, userName),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // --- HEADER CONTAINER ---
+                Container(
+                  width: double.infinity,
+                  height: 80, // Slightly taller to fit avatar nicely
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Welcome back to", style: TextStyle(fontSize: 14, color: Colors.grey)),
+                          Text(
+                            shopName,
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+
+                      // --- PROFILE PICTURE INSTEAD OF VERIFIED ICON ---
+                      InkWell(
+                        onTap: () => onCustomizeClick(context), // Shortcut to profile settings
+                        child: CircleAvatar(
+                          radius: 25,
+                          backgroundColor: Colors.grey.shade200,
+                          backgroundImage: profileImage,
+                          child: profileImage == null
+                              ? const Icon(Icons.person, color: Colors.grey, size: 30)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // --- STAT BOXES ROW 1 ---
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => onSalesClick(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: const StatBox(title: "Sales", value: "40"),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => onOrdersClick(context, userName),
+                        borderRadius: BorderRadius.circular(12),
+                        child: const StatBox(title: "Orders", isTitleBold: true, icon: Icons.shop, iconColor: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // --- STAT BOXES ROW 2 ---
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => onWareClick(context, userName),
+                        child: const StatBox(title: "Warehouse", isTitleBold: true, icon: Icons.warehouse, iconColor: Colors.green),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => onCustomizeClick(context),
+                        child: const StatBox(title: "Customize", icon: Icons.construction, iconColor: Colors.grey, isTitleBold: true),
+                      ),
+                    )
+                  ],
+                ),
+
+                const SizedBox(height: 25),
+
+                // --- SECTION TITLE ---
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    children: [
+                      Text("Recent Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // --- 2. INNER STREAM: FETCH ACTIVITIES ---
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('activities')
+                        .where('uid', isEqualTo: uid)
+                        .orderBy('timestamp', descending: true)
+                        .limit(10)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) return const Center(child: Text("Error loading activity"));
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+                      var docs = snapshot.data!.docs;
+
+                      if (docs.isEmpty) {
+                        return const Center(child: Text("No recent activity.", style: TextStyle(color: Colors.grey)));
+                      }
+
+                      return ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          var data = docs[index].data() as Map<String, dynamic>;
+
+                          // Format Data
+                          String title = data['title'] ?? "Activity";
+                          String subtitle = data['subtitle'] ?? "";
+                          String type = data['type'] ?? "info";
+
+                          // Format Time
+                          Timestamp? t = data['timestamp'];
+                          String timeStr = t != null
+                              ? DateFormat('hh:mm a, dd MMM').format(t.toDate())
+                              : "Just now";
+
+                          // Determine Visuals
+                          bool isOrder = type == 'order';
+                          Color iconBg = isOrder ? Colors.green.shade50 : Colors.orange.shade50;
+                          Color iconColor = isOrder ? Colors.green : Colors.orange;
+                          IconData icon = isOrder ? Icons.shopping_cart : Icons.inventory_2;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                // Icon
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: iconBg,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(icon, color: iconColor, size: 20),
+                                ),
+                                const SizedBox(width: 15),
+
+                                // Text
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                      Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                      Text(timeStr, style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
-}
-
-// --- FIX 2: Define the Class HERE ---
-class ActivityItem {
-  final String title;
-  final String date;
-  final String? amount;
-  final String? entity;
-  final bool isIncome;
-
-  ActivityItem({
-    required this.title,
-    required this.date,
-    this.amount,
-    this.entity,
-    this.isIncome = false,
-  });
 }
